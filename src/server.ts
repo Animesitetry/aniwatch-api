@@ -47,14 +47,15 @@ app
 app.notFound(notFoundHandler);
 app.onError(errorHandler);
 
-serve({
-  port: Number(PORT),
-  fetch: app.fetch,
-}).then(() => {
+try {
+  serve({
+    port: Number(PORT),
+    fetch: app.fetch,
+  });
   console.info(`Aniwatch API running on port ${PORT}`);
-}).catch((err) => {
+} catch (err) {
   console.error("Failed to start server:", err);
-});
+}
 
 if (ISNT_PERSONAL_DEPLOYMENT) {
   const interval = 9 * 60 * 1000; // 9 minutes
