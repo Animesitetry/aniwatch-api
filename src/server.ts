@@ -22,7 +22,7 @@ import type { AniwatchAPIVariables } from "./config/variables.js";
 config();
 
 const BASE_PATH = "/api/v2" as const;
-const PORT: number = Number(process.env.ANIWATCH_API_PORT) || 4000;
+const PORT: number = Number(process.env.PORT) || Number(process.env.ANIWATCH_API_PORT) || 4000;
 const ANIWATCH_API_HOSTNAME = process.env?.ANIWATCH_API_HOSTNAME;
 
 const app = new Hono<{ Variables: AniwatchAPIVariables }>();
@@ -59,14 +59,13 @@ app.onError(errorHandler);
 
 // NOTE: this env is "required" for vercel deployments
 if (!Boolean(process.env?.ANIWATCH_API_VERCEL_DEPLOYMENT)) {
-  serve({
-    port: PORT,
-    fetch: app.fetch,
-  }).addListener("listening", () =>
-    console.info(
-      "\x1b[1;36m" + `aniwatch-api at http://localhost:${PORT}` + "\x1b[0m"
-    )
-  );
+serve({
+  port: PORT,
+  fetch: app.fetch,
+}).then(() => {
+  console.info(`aniwatch-api running on port ${PORT}`);
+});
+
 
   // NOTE: remove the `if` block below for personal deployments
   if (ISNT_PERSONAL_DEPLOYMENT) {
