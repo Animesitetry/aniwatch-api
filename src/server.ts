@@ -22,7 +22,25 @@ import type { AniwatchAPIVariables } from "./config/variables.js";
 config();
 
 const BASE_PATH = "/api/v2" as const;
-const PORT: number = Number(process.env.PORT) || Number(process.env.ANIWATCH_API_PORT) || 4000;
+import * as net from "net";
+
+function findOpenPort(startingPort = 3000): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const server = net.createServer();
+        server.listen(startingPort, () => {
+            const { port } = server.address() as net.AddressInfo;
+            server.close(() => resolve(port));
+        });
+        server.on("error", (err: any) => {
+            if (err.code === "EADDRINUSE") {
+                resolve(findOpenPort(startingPort + 1)); // Try next port
+            } else {
+                reject(err);
+            }
+        });
+    });
+}
+
 const ANIWATCH_API_HOSTNAME = process.env?.ANIWATCH_API_HOSTNAME;
 
 const app = new Hono<{ Variables: AniwatchAPIVariables }>();
@@ -59,11 +77,17 @@ app.onError(errorHandler);
 
 // NOTE: this env is "required" for vercel deployments
 if (!Boolean(process.env?.ANIWATCH_API_VERCEL_DEPLOYMENT)) {
-serve({
-  port: PORT,
-  fetch: app.fetch,
-}).then(() => {
-  console.info(`aniwatch-api running on port ${PORT}`);
+findOpenPort().then((PORT) => {
+  serve({
+    port: PORT,
+    fetch: app.fetch,
+  }).then(() => {
+    console.info(`Aniwatch API running on port ${PORT}`);
+  }).catch((err) => {
+    console.error("Failed to start server:", err);
+  });
+}).catch((err) => {
+  console.error("Error finding open port:", err);
 });
 
 
